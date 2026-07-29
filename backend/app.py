@@ -1,5 +1,6 @@
 import gradio as gr
 import spaces
+from fastapi import Request
 from main import health as fastapi_health
 from main import simulate as fastapi_simulate
 from main import SimulateRequest
@@ -24,7 +25,19 @@ async def health_endpoint():
     return await fastapi_health()
 
 @demo.app.post("/api/simulate")
-async def simulate_endpoint(req: SimulateRequest):
+async def simulate_endpoint(request: Request):
+    body = await request.json()
+    # Support both raw JSON from Vercel and Gradio-wrapped data payload
+    if isinstance(body, dict) and "data" in body and isinstance(body["data"], list) and len(body["data"]) > 0:
+        req_data = body["data"][0]
+    else:
+        req_data = body
+    
+    if isinstance(req_data, dict):
+        req = SimulateRequest(**req_data)
+    else:
+        req = req_data
+        
     return await fastapi_simulate(req)
 
 # Launch demo to keep thread running continuously for HF Space runner
