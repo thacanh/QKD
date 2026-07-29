@@ -1,20 +1,34 @@
-import uvicorn
 import gradio as gr
-from main import app as fastapi_app
+import spaces
+from main import health as fastapi_health
+from main import simulate as fastapi_simulate
+from main import SimulateRequest
 
-# Create a lightweight Gradio interface for HF Space UI
+# Top-level @spaces.GPU function for HF ZeroGPU launcher
+@spaces.GPU
+def predict_gpu(text: str):
+    return f"QuantumShield ZeroGPU Online: {text}"
+
+# Standard Gradio Interface registering @spaces.GPU function
 demo = gr.Interface(
-    fn=lambda text: f"QuantumShield Backend Online: {text}",
+    fn=predict_gpu,
     inputs=gr.Textbox(label="Status Input", value="Check"),
     outputs=gr.Textbox(label="Status Output"),
     title="QuantumShield FinEdu API Server",
     description="Backend for CV-QKD / FSO simulation. API Endpoints active at /api/health and /api/simulate",
 )
 
-# Mount Gradio UI onto main FastAPI app (fastapi_app natively handles /api/simulate and /api/health)
-app = gr.mount_gradio_app(fastapi_app, demo, path="/")
+# Direct FastAPI endpoint registrations on Gradio's internal FastAPI app
+@demo.app.get("/api/health")
+async def health_endpoint():
+    return await fastapi_health()
 
+@demo.app.post("/api/simulate")
+async def simulate_endpoint(req: SimulateRequest):
+    return await fastapi_simulate(req)
+
+# Launch demo to keep thread running continuously for HF Space runner
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+    demo.launch()
 else:
     demo.launch()
