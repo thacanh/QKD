@@ -1,0 +1,133 @@
+import unittest
+
+import numpy as np
+
+from backend.main import (
+    POLICY_WEIGHTS_FILENAME,
+    SimulateRequest,
+    simulate,
+    slice_channel_window,
+)
+from backend.model import (
+    decrypt_message_aes_gcm,
+    encrypt_message_aes_gcm,
+    generate_toeplitz_seed,
+    privacy_amplification,
+)
+
+
+class QuantumShieldCoreTests(unittest.TestCase):
+    def test_all_measured_environments_produce_real_windows(self):
+        means = []
+        for filename in (
+            "clearlowSI.csv",
+            "clearhighSI.csv",
+            "lightrain.csv",
+        ):
+            with self.subTest(filename=filename):
+                window, start, dataset_size = slice_channel_window(
+                    filename, 123_456, 4096
+                )
+                self.assertEqual(start, 123_456)
+                self.assertEqual(window.size, 4096)
+                self.assertEqual(dataset_size, 2**24)
+                self.assertGreater(float(window.std()), 0.0)
+                self.assertTrue(np.all((window >= 0.0) & (window <= 1.0)))
+                means.append(round(float(window.mean()), 6))
+
+        self.assertEqual(len(set(means)), 3)
+
+    def test_backend_uses_new_three_environment_policy(self):
+        self.assertEqual(POLICY_WEIGHTS_FILENAME, "policy.pth")
+
+    def test_toeplitz_privacy_amplification_is_synchronized(self):
+        alice = [int(index % 3 == 0) for index in range(1024)]
+        bob = alice.copy()
+        seed = generate_toeplitz_seed(len(alice), 512)
+        alice_final = privacy_amplification(alice, 512, seed)
+        bob_final = privacy_amplification(bob, 512, seed)
+        self.assertEqual(alice_final, bob_final)
+        self.assertEqual(len(alice_final), 512)
+
+    def test_aes_256_gcm_round_trip_preserves_vietnamese(self):
+        key_bits = [int(index % 2 == 0) for index in range(256)]
+        message = "Báo cáo tài chính: lợi nhuận 600 tỷ đồng"
+        aad = "QuantumShield|unicode-test"
+        ciphertext, nonce, tag = encrypt_message_aes_gcm(message, key_bits, aad)
+        recovered = decrypt_message_aes_gcm(
+            ciphertext, nonce, tag, key_bits, aad
+        )
+        self.assertEqual(recovered, message)
+
+
+class QuantumShieldSimulationTests(unittest.IsolatedAsyncioTestCase):
+    async def test_new_policy_runs_all_three_channel_environments(self):
+        for dataset in (
+            "clearlowSI.csv",
+            "clearhighSI.csv",
+            "lightrain.csv",
+        ):
+            with self.subTest(dataset=dataset):
+                result = await simulate(
+                    SimulateRequest(
+                        channel_dataset=dataset,
+                        window_start=123_456,
+                        sample_size=8192,
+                        mode="adaptive",
+                        Pt_dBm=5,
+                        xi=30,
+                        eve_active=False,
+                    )
+                )
+                self.assertEqual(result.channel_dataset, dataset)
+                self.assertEqual(result.model_weights, "policy.pth")
+                self.assertTrue(result.accepted)
+                self.assertTrue(result.integrity_verified)
+
+    async def test_adaptive_demo_succeeds_where_low_fixed_threshold_fails(self):
+        common = {
+            "channel_dataset": "clearlowSI.csv",
+            "window_start": 0,
+            "sample_size": 8192,
+            "Pt_dBm": 4.5,
+            "xi": 60,
+            "eve_active": False,
+            "rE": 100,
+        }
+        fixed = await simulate(
+            SimulateRequest(**common, mode="fixed", fixed_rho=0.0)
+        )
+        adaptive_request = SimulateRequest(**common, mode="adaptive")
+        adaptive = await simulate(adaptive_request)
+
+        self.assertFalse(fixed.accepted)
+        self.assertGreaterEqual(fixed.qber, 0.11)
+        self.assertTrue(adaptive.accepted)
+        self.assertLess(adaptive.qber, 0.11)
+        self.assertGreaterEqual(adaptive.final_key_len, 256)
+        self.assertTrue(adaptive.integrity_verified)
+        self.assertEqual(
+            adaptive.decrypted_payload, adaptive_request.plaintext_payload
+        )
+
+    async def test_close_eve_is_detected_and_payload_is_blocked(self):
+        attacked = await simulate(
+            SimulateRequest(
+                channel_dataset="clearlowSI.csv",
+                window_start=0,
+                sample_size=8192,
+                mode="adaptive",
+                Pt_dBm=5,
+                xi=30,
+                eve_active=True,
+                rE=20,
+            )
+        )
+        self.assertFalse(attacked.accepted)
+        self.assertGreaterEqual(attacked.qber, 0.11)
+        self.assertEqual(attacked.ciphertext, "")
+        self.assertEqual(attacked.abort_reason, "QBER_ABOVE_11_PERCENT")
+
+
+if __name__ == "__main__":
+    unittest.main()
