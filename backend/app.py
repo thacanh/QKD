@@ -18,3 +18,6 @@ demo = gr.Interface(
 
 # Attach FastAPI router directly onto Gradio's internal FastAPI application
 demo.app.include_router(fastapi_app.router)
+
+# Launch demo and block main thread to keep server running continuously
+demo.queue().launch()
