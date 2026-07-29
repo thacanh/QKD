@@ -1,6 +1,8 @@
 import gradio as gr
 import spaces
-from main import app as fastapi_app
+from main import health as fastapi_health
+from main import simulate as fastapi_simulate
+from main import SimulateRequest
 
 # Top-level @spaces.GPU function for HF ZeroGPU runner
 @spaces.GPU
@@ -13,11 +15,17 @@ demo = gr.Interface(
     inputs=gr.Textbox(label="Status Input", value="Check"),
     outputs=gr.Textbox(label="Status Output"),
     title="QuantumShield FinEdu API Server",
-    description="Backend for CV-QKD / FSO simulation. Endpoints active at /api/health and /api/simulate",
+    description="Backend for CV-QKD / FSO simulation. API Endpoints active at /api/health and /api/simulate",
 )
 
-# Attach FastAPI router directly onto Gradio's internal FastAPI application
-demo.app.include_router(fastapi_app.router)
+# Direct FastAPI endpoint registrations on Gradio's FastAPI app
+@demo.app.get("/api/health")
+async def health_endpoint():
+    return await fastapi_health()
 
-# Launch demo and block main thread to keep server running continuously
-demo.queue().launch()
+@demo.app.post("/api/simulate")
+async def simulate_endpoint(req: SimulateRequest):
+    return await fastapi_simulate(req)
+
+# Launch Gradio app explicitly listening on 0.0.0.0:7860
+demo.queue().launch(server_name="0.0.0.0", server_port=7860)
