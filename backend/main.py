@@ -197,6 +197,7 @@ class SimulateResponse(BaseModel):
 
 @app.get("/api/health")
 @app.get("/v1/health")
+@app.get("/health")
 async def health():
     return {
         "status": "ok",
@@ -210,6 +211,7 @@ async def health():
 
 @app.get("/api/datasets")
 @app.get("/v1/datasets")
+@app.get("/datasets")
 async def datasets():
     result = []
     for filename, label in CHANNEL_DATASETS.items():
@@ -234,6 +236,7 @@ def binary_entropy(probability: float) -> float:
 
 @app.post("/api/simulate", response_model=SimulateResponse)
 @app.post("/v1/simulate", response_model=SimulateResponse)
+@app.post("/simulate", response_model=SimulateResponse)
 async def simulate(req: SimulateRequest):
     try:
         h_raw, window_start, dataset_size = slice_channel_window(
