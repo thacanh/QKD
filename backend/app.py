@@ -1,6 +1,7 @@
 import gradio as gr
 import spaces
-from fastapi import Request
+from starlette.responses import JSONResponse
+from starlette.routing import Route
 from main import health as fastapi_health
 from main import simulate as fastapi_simulate
 from main import SimulateRequest
@@ -19,26 +20,26 @@ demo = gr.Interface(
     description="Backend for CV-QKD / FSO simulation. API Endpoints active at /api/health and /api/simulate",
 )
 
-# Direct FastAPI endpoint registrations on Gradio's internal FastAPI app
-@demo.app.get("/api/health")
-async def health_endpoint():
-    return await fastapi_health()
+# Raw Starlette endpoint handlers that bypass Gradio's Pydantic validation completely
+async def raw_health(request):
+    res = await fastapi_health()
+    return JSONResponse(res)
 
-@demo.app.post("/api/simulate")
-async def simulate_endpoint(request: Request):
+async def raw_simulate(request):
     body = await request.json()
-    # Support both raw JSON from Vercel and Gradio-wrapped data payload
+    # Support both raw JSON payload from Vercel and Gradio-wrapped data payload
     if isinstance(body, dict) and "data" in body and isinstance(body["data"], list) and len(body["data"]) > 0:
         req_data = body["data"][0]
     else:
         req_data = body
-    
-    if isinstance(req_data, dict):
-        req = SimulateRequest(**req_data)
-    else:
-        req = req_data
-        
-    return await fastapi_simulate(req)
+
+    req = SimulateRequest(**req_data)
+    res = await fastapi_simulate(req)
+    return JSONResponse(res.model_dump())
+
+# Insert raw Starlette routes at position 0 of demo.app router so they take top priority
+demo.app.router.routes.insert(0, Route("/api/health", raw_health, methods=["GET"]))
+demo.app.router.routes.insert(0, Route("/api/simulate", raw_simulate, methods=["POST"]))
 
 # Launch demo to keep thread running continuously for HF Space runner
 if __name__ == "__main__":
