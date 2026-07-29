@@ -3,19 +3,26 @@ import uvicorn
 import gradio as gr
 from main import app as fastapi_app
 
-# Add dummy @spaces.GPU function to satisfy Hugging Face ZeroGPU runner
+# ZeroGPU compatibility handler for Hugging Face Spaces
 try:
     import spaces
-    @spaces.GPU
-    def gpu_check():
-        return "GPU Ready"
+
+    @spaces.GPU(duration=1)
+    def dummy_gpu_task():
+        return "GPU active"
+
+    try:
+        dummy_gpu_task()
+    except Exception:
+        pass
 except Exception:
     pass
 
-# Create a lightweight Gradio interface so HF Space detects the app
+# Create a lightweight Gradio UI for HF Space
 with gr.Blocks(title="QuantumShield FinEdu API") as demo:
     gr.Markdown("# 🛡️ QuantumShield FinEdu Backend API")
-    gr.Markdown("Server is running! API Endpoints: `/api/health` and `/api/simulate`")
+    gr.Markdown("Server status: **Active & Ready**")
+    gr.Markdown("API Endpoints: `/api/health` and `/api/simulate`")
 
 # Mount FastAPI app onto Gradio
 app = gr.mount_gradio_app(fastapi_app, demo, path="/")
