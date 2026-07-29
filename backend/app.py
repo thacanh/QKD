@@ -1,5 +1,3 @@
-import os
-import uvicorn
 import gradio as gr
 import spaces
 from main import app as fastapi_app
@@ -9,17 +7,14 @@ from main import app as fastapi_app
 def predict(text):
     return f"QuantumShield Backend Online: {text}"
 
-# Create standard Gradio Interface with @spaces.GPU function
+# Create standard Gradio Interface for HF Space
 demo = gr.Interface(
     fn=predict,
     inputs=gr.Textbox(label="Status Input", value="Check"),
     outputs=gr.Textbox(label="Status Output"),
     title="QuantumShield FinEdu API Server",
-    description="Backend for CV-QKD / FSO simulation. API routes active at /api/health and /api/simulate",
+    description="Backend for CV-QKD / FSO simulation. Endpoints active at /api/health and /api/simulate",
 )
 
-# Mount FastAPI endpoints onto Gradio App
-app = gr.mount_gradio_app(fastapi_app, demo, path="/")
-
-if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=7860, reload=False)
+# Attach FastAPI router directly onto Gradio's internal FastAPI application
+demo.app.include_router(fastapi_app.router)
