@@ -1,4 +1,8 @@
+import importlib
+import sys
+import types
 import unittest
+from unittest.mock import Mock, patch
 
 import numpy as np
 
@@ -127,6 +131,52 @@ class QuantumShieldSimulationTests(unittest.IsolatedAsyncioTestCase):
         self.assertGreaterEqual(attacked.qber, 0.11)
         self.assertEqual(attacked.ciphertext, "")
         self.assertEqual(attacked.abort_reason, "QBER_ABOVE_11_PERCENT")
+
+
+class HuggingFaceEntrypointTests(unittest.TestCase):
+    def test_entrypoint_reuses_api_app_and_reports_zero_gpu_startup(self):
+        fake_gradio = types.ModuleType("gradio")
+        fake_gradio.Textbox = Mock(side_effect=lambda **_: object())
+        fake_gradio.Interface = Mock(side_effect=lambda **_: object())
+        fake_gradio.mount_gradio_app = Mock(
+            side_effect=lambda fastapi_app, _demo, path: fastapi_app
+        )
+
+        fake_spaces = types.ModuleType("spaces")
+        fake_spaces.__path__ = []
+        fake_spaces.GPU = lambda function: function
+        fake_zero = types.ModuleType("spaces.zero")
+        fake_zero.startup = Mock()
+        fake_spaces.zero = fake_zero
+
+        fake_uvicorn = types.ModuleType("uvicorn")
+        fake_uvicorn.run = Mock()
+
+        sys.modules.pop("backend.app", None)
+        try:
+            with patch.dict(
+                sys.modules,
+                {
+                    "gradio": fake_gradio,
+                    "spaces": fake_spaces,
+                    "spaces.zero": fake_zero,
+                    "uvicorn": fake_uvicorn,
+                },
+            ):
+                entrypoint = importlib.import_module("backend.app")
+
+                self.assertIs(entrypoint.app, sys.modules["backend.main"].app)
+                self.assertIn(
+                    "/v1/simulate",
+                    {route.path for route in entrypoint.app.routes},
+                )
+                fake_uvicorn.run.assert_not_called()
+                fake_zero.startup.assert_not_called()
+
+                entrypoint.report_zero_gpu_startup()
+                fake_zero.startup.assert_called_once_with()
+        finally:
+            sys.modules.pop("backend.app", None)
 
 
 if __name__ == "__main__":
