@@ -1,3 +1,4 @@
+import uvicorn
 import gradio as gr
 from main import app as fastapi_app
 
@@ -12,3 +13,8 @@ demo = gr.Interface(
 
 # Mount Gradio UI onto main FastAPI app (fastapi_app natively handles /api/simulate and /api/health)
 app = gr.mount_gradio_app(fastapi_app, demo, path="/")
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=7860)
+else:
+    demo.launch()
