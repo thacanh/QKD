@@ -1,6 +1,16 @@
+import os
 import uvicorn
 import gradio as gr
 from main import app as fastapi_app
+
+# Add dummy @spaces.GPU function to satisfy Hugging Face ZeroGPU runner
+try:
+    import spaces
+    @spaces.GPU
+    def gpu_check():
+        return "GPU Ready"
+except Exception:
+    pass
 
 # Create a lightweight Gradio interface so HF Space detects the app
 with gr.Blocks(title="QuantumShield FinEdu API") as demo:
