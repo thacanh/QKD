@@ -6,4 +6,5 @@ numpy
 pydantic
 cryptography
 huggingface_hub==0.24.0
+spaces
 gradio>=4.44.1
