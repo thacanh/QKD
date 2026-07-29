@@ -18,7 +18,7 @@ demo = gr.Interface(
     description="Backend for CV-QKD / FSO simulation. API Endpoints active at /api/health and /api/simulate",
 )
 
-# Direct FastAPI endpoint registrations on Gradio's FastAPI app
+# Direct FastAPI endpoint registrations on Gradio's internal FastAPI app
 @demo.app.get("/api/health")
 async def health_endpoint():
     return await fastapi_health()
@@ -26,6 +26,3 @@ async def health_endpoint():
 @demo.app.post("/api/simulate")
 async def simulate_endpoint(req: SimulateRequest):
     return await fastapi_simulate(req)
-
-# Launch Gradio app explicitly listening on 0.0.0.0:7860
-demo.queue().launch(server_name="0.0.0.0", server_port=7860)
