@@ -4,23 +4,21 @@ import gradio as gr
 import spaces
 from main import app as fastapi_app
 
-# Define a ZeroGPU decorated function registered to Gradio event graph
+# Top-level @spaces.GPU function for HF ZeroGPU runner
 @spaces.GPU
-def check_gpu_status():
-    return "ZeroGPU is active and ready!"
+def predict(text):
+    return f"QuantumShield Backend Online: {text}"
 
-# Create Gradio Blocks interface registering the @spaces.GPU function
-with gr.Blocks(title="QuantumShield FinEdu API") as demo:
-    gr.Markdown("# 🛡️ QuantumShield FinEdu Backend API")
-    gr.Markdown("Server Status: **Active & Ready**")
-    gr.Markdown("API Endpoints: `/api/health` and `/api/simulate`")
-    
-    # Register the @spaces.GPU function on a Gradio button click event
-    check_btn = gr.Button("Check GPU Status")
-    status_out = gr.Textbox(label="Status")
-    check_btn.click(fn=check_gpu_status, inputs=[], outputs=status_out)
+# Create standard Gradio Interface with @spaces.GPU function
+demo = gr.Interface(
+    fn=predict,
+    inputs=gr.Textbox(label="Status Input", value="Check"),
+    outputs=gr.Textbox(label="Status Output"),
+    title="QuantumShield FinEdu API Server",
+    description="Backend for CV-QKD / FSO simulation. API routes active at /api/health and /api/simulate",
+)
 
-# Mount FastAPI app onto Gradio
+# Mount FastAPI endpoints onto Gradio App
 app = gr.mount_gradio_app(fastapi_app, demo, path="/")
 
 if __name__ == "__main__":
