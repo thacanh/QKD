@@ -37,11 +37,12 @@ async def raw_simulate(request):
     res = await fastapi_simulate(req)
     return JSONResponse(res.model_dump())
 
-# Insert raw Starlette routes at position 0 of demo.app router
-demo.app.router.routes.insert(0, Route("/v1/health", raw_health, methods=["GET"]))
-demo.app.router.routes.insert(0, Route("/v1/simulate", raw_simulate, methods=["POST"]))
-demo.app.router.routes.insert(0, Route("/api/health", raw_health, methods=["GET"]))
-demo.app.router.routes.insert(0, Route("/api/simulate", raw_simulate, methods=["POST"]))
+# Insert all route variants at position 0 to match with or without trailing slashes and prefixes
+for path in ["/v1/health", "/v1/health/", "/api/health", "/api/health/", "/health", "/health/"]:
+    demo.app.router.routes.insert(0, Route(path, raw_health, methods=["GET"]))
+
+for path in ["/v1/simulate", "/v1/simulate/", "/api/simulate", "/api/simulate/", "/simulate", "/simulate/"]:
+    demo.app.router.routes.insert(0, Route(path, raw_simulate, methods=["POST"]))
 
 # Launch demo to keep thread running continuously for HF Space runner
 if __name__ == "__main__":

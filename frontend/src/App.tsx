@@ -62,10 +62,8 @@ interface ExperimentRecord {
   accepted: boolean;
 }
 
-const baseApiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
-const API_URL = baseApiUrl.endsWith('/v1/simulate') || baseApiUrl.endsWith('/api/simulate')
-  ? baseApiUrl
-  : `${baseApiUrl}/v1/simulate`;
+const rawUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').trim().replace(/\/+$/, '');
+const API_URL = rawUrl.includes('/simulate') ? rawUrl : `${rawUrl}/v1/simulate`;
 
 const DATASET_OPTIONS: Array<{
   value: ChannelDataset;
