@@ -1,4 +1,4 @@
-# ĐẶC TẢ HỆ THỐNG QUANTUMSHIELD FINEDU V2
+# ĐẶC TẢ HỆ THỐNG QUANTUMSHIELD FINEDU
 
 ## I. Tổng quan
 

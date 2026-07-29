@@ -1,4 +1,4 @@
-# QuantumShield FinEdu v2
+# QuantumShield FinEdu
 
 QuantumShield FinEdu là phòng thí nghiệm web mô phỏng CV-QKD/FSO trên dữ liệu
 kênh đo thực nghiệm. Mô hình A2C chọn ngưỡng thu, chuỗi khóa được sửa lỗi và
@@ -8,7 +8,7 @@ AES-256-GCM để bảo vệ nội dung tài chính mẫu.
 > Đây là phần mềm mô phỏng phục vụ đào tạo và nghiên cứu, không phải thiết bị
 > QKD vật lý đã được kiểm định cho hệ thống tài chính thực tế.
 
-## Điểm chính của phiên bản 2
+## Điểm chính của hệ thống
 
 - Đọc cửa sổ 4.096-16.384 mẫu trực tiếp từ `clearlowSI.csv`,
   `clearhighSI.csv` hoặc `lightrain.csv`.

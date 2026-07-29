@@ -1,6 +1,6 @@
 # QuantumShield FinEdu frontend
 
-Dashboard React + TypeScript cho QuantumShield FinEdu v2.
+Dashboard React + TypeScript cho QuantumShield FinEdu.
 
 ```powershell
 npm install
