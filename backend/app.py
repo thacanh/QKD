@@ -1,10 +1,7 @@
-import os
 import gradio as gr
-from main import health as fastapi_health
-from main import simulate as fastapi_simulate
-from main import SimulateRequest
+from main import app as fastapi_app
 
-# Create standard Gradio Interface for HF Space
+# Create a lightweight Gradio interface for HF Space
 demo = gr.Interface(
     fn=lambda text: f"QuantumShield Backend Online: {text}",
     inputs=gr.Textbox(label="Status Input", value="Check"),
@@ -13,11 +10,10 @@ demo = gr.Interface(
     description="Backend for CV-QKD / FSO simulation. API Endpoints active at /api/health and /api/simulate",
 )
 
-# Direct FastAPI endpoint registrations on Gradio's internal FastAPI app
-@demo.app.get("/api/health")
-async def health_endpoint():
-    return await fastapi_health()
+# Mount FastAPI app onto Gradio
+app = gr.mount_gradio_app(fastapi_app, demo, path="/")
 
-@demo.app.post("/api/simulate")
-async def simulate_endpoint(req: SimulateRequest):
-    return await fastapi_simulate(req)
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=7860)
