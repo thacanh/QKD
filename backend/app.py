@@ -1,17 +1,12 @@
+import os
 import gradio as gr
-import spaces
 from main import health as fastapi_health
 from main import simulate as fastapi_simulate
 from main import SimulateRequest
 
-# Top-level @spaces.GPU function for HF ZeroGPU runner
-@spaces.GPU
-def predict(text):
-    return f"QuantumShield Backend Online: {text}"
-
 # Create standard Gradio Interface for HF Space
 demo = gr.Interface(
-    fn=predict,
+    fn=lambda text: f"QuantumShield Backend Online: {text}",
     inputs=gr.Textbox(label="Status Input", value="Check"),
     outputs=gr.Textbox(label="Status Output"),
     title="QuantumShield FinEdu API Server",

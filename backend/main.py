@@ -45,7 +45,8 @@ except ModuleNotFoundError:
     )
 
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+use_cpu = os.getenv("FORCE_CPU", "0") == "1" or "SPACE_ID" in os.environ
+DEVICE = torch.device("cpu" if use_cpu else ("cuda" if torch.cuda.is_available() else "cpu"))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 WEIGHTS_DIR = os.path.join(BASE_DIR, "weights")
