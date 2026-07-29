@@ -17,10 +17,10 @@ demo = gr.Interface(
     inputs=gr.Textbox(label="Status Input", value="Check"),
     outputs=gr.Textbox(label="Status Output"),
     title="QuantumShield FinEdu API Server",
-    description="Backend for CV-QKD / FSO simulation. API Endpoints active at /api/health and /api/simulate",
+    description="Backend for CV-QKD / FSO simulation. API Endpoints active at /v1/health and /v1/simulate",
 )
 
-# Raw Starlette endpoint handlers that bypass Gradio's Pydantic validation completely
+# Raw Starlette endpoint handlers bypassing Gradio's Pydantic validation
 async def raw_health(request):
     res = await fastapi_health()
     return JSONResponse(res)
@@ -37,7 +37,9 @@ async def raw_simulate(request):
     res = await fastapi_simulate(req)
     return JSONResponse(res.model_dump())
 
-# Insert raw Starlette routes at position 0 of demo.app router so they take top priority
+# Insert raw Starlette routes at position 0 of demo.app router
+demo.app.router.routes.insert(0, Route("/v1/health", raw_health, methods=["GET"]))
+demo.app.router.routes.insert(0, Route("/v1/simulate", raw_simulate, methods=["POST"]))
 demo.app.router.routes.insert(0, Route("/api/health", raw_health, methods=["GET"]))
 demo.app.router.routes.insert(0, Route("/api/simulate", raw_simulate, methods=["POST"]))
 
